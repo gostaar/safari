@@ -6,233 +6,29 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 		<noscript>
 			<link rel="stylesheet" href="assets/css/noscript.css" />
 		</noscript>
-
-		<!-- <script src="https://accounts.google.com/gsi/client" async defer></script>
-		<script src="https://apis.google.com/js/api.js"></script> -->
+		<script>
+			CLIENT_ID = "317641776474-5vjf1sapl5rpf39bq7dn39665co8ucvt.apps.googleusercontent.com";
+			SCOPES = "https://www.googleapis.com/auth/calendar";
+			API_KEY = "AIzaSyCtrR9vgCObA2x3iCMeZbD2RGra3nyFPfU";
+			DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest";
+			agendaId = "37fabe836153a47e0be51057b05bbeed550e066cb060b59d93bcfdf164c8690f@group.calendar.google.com";
+			redirect_uri = "http://localhost:5500/safari.html";
+		</script>
+		<script src="https://accounts.google.com/gsi/client" async defer></script>
+		<script src="assets/js/elements/googleIdentity.js" onload="initClient()"></script>
 		<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-
 		<script src="./packages/core/index.global.js"></script>
 		<script src="./packages/daygrid/index.global.js"></script>
 		<script src="./packages/google-calendar/index.global.js"></script>
 		<script src="./packages/bootstrap5/index.global.js"></script>
-
-		<script>
-			let calendar;
-			document.addEventListener('DOMContentLoaded', function () {
-				var calendarEl = document.getElementById('calendar');
-
-				calendar = new FullCalendar.Calendar(calendarEl, {
-					initialDate: '2024-05-01',
-					editable: true,
-					selectable: true,
-					buttonText: {
-						today: 'Aujourd\'hui',
-						month: 'Mois',
-						list: 'Liste'
-					},
-					locale: 'fr',
-					firstDay: 1,
-					googleCalendarApiKey: 'AIzaSyCtrR9vgCObA2x3iCMeZbD2RGra3nyFPfU',
-					events: {
-						googleCalendarId: '37fabe836153a47e0be51057b05bbeed550e066cb060b59d93bcfdf164c8690f@group.calendar.google.com',
-					},
-					timeZone: 'local',
-					eventClick: function (info) {
-						info.jsEvent.preventDefault();
-						var eventTitle = info.event.title;
-						var eventStart = info.event.start.toLocaleString();
-						var eventEnd = info.event.end ? info.event.end.toLocaleString() : 'Non spécifié';
-						var eventDescription = info.event.extendedProps.description || 'Aucune description disponible.';
-
-						// Appel à Swal.fire avec les boutons masqués et showCloseButton à false
-						Swal.fire({
-							title: eventTitle,
-							html: `
-								<p><strong>Heure de début :</strong> ${eventStart}</p>
-								<p><strong>Heure de fin :</strong> ${eventEnd}</p>
-								<p><strong>Description :</strong> ${eventDescription}</p>
-								<button id="update_button" onclick="updateEventDescription('${info.event.id}, ${info.event.extendedProps.description}')" style="color:#000 !important;">S'inscrire</button>
-								<pre id="content" style="white-space: pre-wrap;"></pre>
-							`,
-							showCloseButton: false
-						});
-					},
-				});
-
-				calendar.render();
-			});
-
-			const CLIENT_ID = '317641776474-5vjf1sapl5rpf39bq7dn39665co8ucvt.apps.googleusercontent.com';
-			const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
-			const API_KEY = 'AIzaSyCtrR9vgCObA2x3iCMeZbD2RGra3nyFPfU';
-			const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest';
-			const agendaId = "37fabe836153a47e0be51057b05bbeed550e066cb060b59d93bcfdf164c8690f@group.calendar.google.com";
-
-			let tokenClient;
-			let gapiInited = false;
-			let gisInited = false;
-
-			function gapiLoaded() {
-				gapi.load('client', initializeGapiClient);
-			}
-
-			async function initializeGapiClient() {
-				await gapi.client.init({
-					apiKey: API_KEY,
-					discoveryDocs: [DISCOVERY_DOC],
-				});
-				gapiInited = true;
-				// maybeEnableButtons();
-			}
-
-			function gisLoaded() {
-				tokenClient = google.accounts.oauth2.initTokenClient({
-					client_id: CLIENT_ID,
-					scope: SCOPES,
-					callback: '', // defined later
-				});
-				gisInited = true;
-				// maybeEnableButtons();
-			}
-
-			function handleAuthClick() {
-				tokenClient.callback = async (resp) => {
-					if (resp.error !== undefined) {
-						throw (resp);
-					}
-					document.getElementById('authorize_button').innerText = 'Refresh';
-					await listUpcomingEvents();
-				};
-
-				if (gapi.client.getToken() === null) {
-					// Prompt the user to select a Google Account and ask for consent to share their data
-					// when establishing a new session.
-					tokenClient.requestAccessToken({ prompt: 'consent' });
-				} else {
-					// Skip display of account chooser and consent dialog for an existing session.
-					tokenClient.requestAccessToken({ prompt: '' });
-				}
-			}
-
-			function handleSignoutClick() {
-				const token = gapi.client.getToken();
-				if (token !== null) {
-					google.accounts.oauth2.revoke(token.access_token);
-					gapi.client.setToken('');
-					document.getElementById('content').innerText = '';
-					document.getElementById('authorize_button').innerText = 'Authorize';
-				}
-			}
-
-			async function listUpcomingEvents() {
-				let response;
-				try {
-					const request = {
-						'calendarId': 'primary',
-						'timeMin': (new Date()).toISOString(),
-						'showDeleted': false,
-						'singleEvents': true,
-						'maxResults': 10,
-						'orderBy': 'startTime',
-					};
-					response = await gapi.client.calendar.events.list(request);
-				} catch (err) {
-					document.getElementById('content').innerText = err.message;
-					return;
-				}
-
-				const events = response.result.items;
-				if (!events || events.length == 0) {
-					document.getElementById('content').innerText = 'No events found.';
-					return;
-				}
-				// Flatten to string to display
-				const output = events.reduce(
-					(str, event) => `${str}${event.summary} (${event.start.dateTime || event.start.date})\n`,
-					'Events:\n');
-				document.getElementById('content').innerText = output;
-			}
-
-			function updateEventDescription(event_Id) {
-				// Diviser la chaîne eventId en un tableau contenant l'identifiant de l'événement et sa description
-				const event = event_Id.split(',');
-				const eventId = event[0];
-				const description = event[1];
-
-				// Utiliser une expression régulière pour extraire le premier nombre de la description
-				const match = description.match(/\d+/);
-				const firstNumber = match ? parseInt(match[0]) : 0;
-
-				// Afficher une boîte de dialogue pour obtenir le nombre de participants
-				Swal.fire({
-					title: 'Inscription',
-					html: `<div>
-						<p style="text-align:center;">Nom</p>
-						<input type="text" id="Name" class="swal2-input" step="any" required>
-						<p style="text-align:center;">Email</p>
-						<input type="email" id="email" class="swal2-input" step="any" required>
-						<p style="text-align:center;">Téléphone</p>
-						<input type="number" id="phone" class="swal2-input" step="any" required>
-						<p style="text-align:center;">Nombre de participants :</p>
-						<input type="number" id="subtractionValue" class="swal2-input" min="0" step="any" required>
-					`,
-					showCancelButton: true,
-					confirmButtonText: 'Confirmer',
-					cancelButtonText: 'Annuler',
-					preConfirm: () => {
-						const subtractionValue = parseFloat(document.getElementById('subtractionValue').value);
-						// Effectuer le calcul du nombre de places restantes
-						const remainingPlaces = firstNumber - subtractionValue;
-
-						// Mettre à jour la description de l'événement dans Google Calendar
-						gapi.client.calendar.events.get({
-							calendarId: '37fabe836153a47e0be51057b05bbeed550e066cb060b59d93bcfdf164c8690f@group.calendar.google.com',
-							eventId: eventId
-						}).then(function (response) {
-							const eventToUpdate = response.result;
-							eventToUpdate.description = `${remainingPlaces} places restantes`;
-
-							gapi.client.calendar.events.update({
-								calendarId: '37fabe836153a47e0be51057b05bbeed550e066cb060b59d93bcfdf164c8690f@group.calendar.google.com',
-								eventId: eventId,
-								resource: eventToUpdate
-							}).then(function (response) {
-								console.log('Description mise à jour avec succès :', response);
-							}, function (error) {
-								console.error('Erreur lors de la mise à jour de la description :', error);
-							});
-						}, function (error) {
-							console.error('Erreur lors de la récupération de l\'événement :', error);
-						});
-
-						return remainingPlaces;
-					}
-				}).then((result) => {
-					if (result.isConfirmed) {
-						Swal.fire({
-							title: 'Succès',
-							html: `L'inscription a été prise en compte.<br />Nombre de places restantes : ${result.value}`,
-							icon: 'success',
-							confirmButtonText: 'OK',
-						});
-					}
-				});
-			}
-
-		</script>
 	</head>
 
 	<body class="is-preload" style="background-image:url('./images/bg.jpg');">
-		<!-- <div id="g_id_onload" data-client_id="317641776474-5vjf1sapl5rpf39bq7dn39665co8ucvt.apps.googleusercontent.com"
-			data-callback="handleCredentialResponse"></div>
-		<div class="g_id_signin" data-type="standard"></div> -->
-
-
-
+		<script src="assets/js/elements/calendar.js"></script>
 		<div id="wrapper">
 			<header id="header">
 				<a href="index.html" class="logo">Réservations</a>
@@ -274,8 +70,6 @@
 		<script src="assets/js/util.js"></script>
 		<script src="assets/js/main.js"></script>
 		<script src="assets/js/elements/footer.js"></script>
-		<script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
-		<script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 
 	</body>
 

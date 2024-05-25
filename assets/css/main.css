@@ -4708,7 +4708,38 @@ input, select, textarea {
 		transform: scale(1.2);
 	}
 
+	/* fullCalendar */
 	
 	button {
 		color: #fff !important;
 	}
+
+	/* sweetalert */
+
+	.swal2-popup {
+		font-size: 1.2rem;
+	}
+	.swal2-input {
+		margin: 0.5em 0;
+		width: 100% !important;
+	}
+	.swal2-content p {
+		margin: 0;
+	}
+
+	:where(.swal2-container) {
+		margin: 0 !important;
+	}
+
+	:is(.swal2-select) {
+		margin: 0 !important;
+	}
+
+	.custom-popup div{
+		text-align: left !important;
+	}
+
+	.custom-popup select {
+		height: max-content !important;
+	}
+	

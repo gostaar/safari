@@ -1,5 +1,8 @@
 {
-    "googleCalendarApiKey": "AIzaSyCtrR9vgCObA2x3iCMeZbD2RGra3nyFPfU",
-    "googleCalendarId": "37fabe836153a47e0be51057b05bbeed550e066cb060b59d93bcfdf164c8690f@group.calendar.google.com",
-    "client_id": "317641776474-5vjf1sapl5rpf39bq7dn39665co8ucvt.apps.googleusercontent.com"
+    "CLIENT_ID" : "317641776474-5vjf1sapl5rpf39bq7dn39665co8ucvt.apps.googleusercontent.com",
+    "SCOPES" : "https://www.googleapis.com/auth/calendar",
+    "API_KEY" : "AIzaSyCtrR9vgCObA2x3iCMeZbD2RGra3nyFPfU",
+    "DISCOVERY_DOC" : "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest",
+    "agendaId" : "37fabe836153a47e0be51057b05bbeed550e066cb060b59d93bcfdf164c8690f@group.calendar.google.com",
+    "redirect_uri" : "http://localhost:5500/safari.html"
 }
