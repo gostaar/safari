@@ -1,6 +1,5 @@
 function initClient() {
-   
-    client = google.accounts.oauth2.initCodeClient({ //google is not defined
+    client = google.accounts.oauth2.initCodeClient({ 
         client_id: CLIENT_ID,
         scope: SCOPES,
         ux_mode: 'redirect',
