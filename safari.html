@@ -11,7 +11,6 @@
 			<link rel="stylesheet" href="assets/css/noscript.css" />
 		</noscript>
 		<script src="https://accounts.google.com/gsi/client" async defer></script>
-		<!-- <script src="https://apis.google.com/js/api.js" async defer></script> -->
 		<script src="https://apis.google.com/js/api.js?onload=loadGapi" async defer></script>
 		<script>
 			CLIENT_ID = "317641776474-5vjf1sapl5rpf39bq7dn39665co8ucvt.apps.googleusercontent.com";
@@ -58,11 +57,11 @@
 				tokenClient = google.accounts.oauth2.initTokenClient({
 					client_id: CLIENT_ID,
 					scope: SCOPES,
-					callback: 'handleAuthResult', // defined later
+					callback: 'handleAuthResult',
 				});
 				gisInited = true;
 
-				checkAuth().catch(error => console.error('Erreur lors de l\'authentification :', error));
+				// checkAuth().catch(error => console.error('Erreur lors de l\'authentification :', error));
 
 			}
 
@@ -83,9 +82,6 @@
 					gapi.client.init({
 						apiKey: API_KEY,
 						discoveryDocs: [DISCOVERY_DOC]
-					}).then(() => {
-						console.log('Bibliothèque Google API client chargée.');
-						// handleRedirect();
 					}).catch((error) => {
 						console.error('Erreur durant le chargement de la bibliothèque Google API client:', error);
 					});
@@ -120,7 +116,6 @@
 				if (authResult && authResult.access_token) {
 					gapi.client.setToken({ access_token: authResult.access_token });
 					document.getElementById('GoogleStatus').innerText = "Connecté à Google";
-					// Continue with the event update
 					updateEvent();
 				} else {
 					document.getElementById('GoogleStatus').innerText = "Non connecté à Google";
@@ -145,13 +140,13 @@
 			let event
 			let eventId
 			let event_Id
-
+			let event_description
 
 			function updateEvent(event_Id) {
 				event = event_Id.split(',');
 				eventId = event[0];
-				const description = event[1];
-				const match = eventDescription.match(/\d+/);
+				event_description = event[1];
+				const match = event_description.match(/\d+/);
 				const firstNumber = match ? parseInt(match[0]) : 0;
 				const subtractionValue = parseFloat(document.getElementById('subtractionValue').value);
 				const remainingPlaces = firstNumber - subtractionValue;
@@ -181,8 +176,9 @@
 			function updateEventDescription(event_Id) {
 				event = event_Id.split(',');
 				eventId = event[0];
+				event_description = event[1];
 
-				const match = description.match(/\d+/);
+				const match = event_description.match(/\d+/);
 				const firstNumber = match ? parseInt(match[0]) : 0;
 
 				const maxOptions = 20;
@@ -192,7 +188,7 @@
 				}
 
 				Swal.fire({
-					title: 'Inscription',
+					title: 'Inscription <br />' + event_description,
 					html: `
 						<div>
 							<label for="Name">Nom :</label>
@@ -243,8 +239,11 @@
 							html: `L'inscription a été prise en compte.<br />Nombre de places restantes : ${result.value}`,
 							icon: 'success',
 							confirmButtonText: 'OK',
+						}).then(() => {
+							location.reload();
 						});
 					}
+
 				});
 			}
 
@@ -271,24 +270,24 @@
 						googleCalendarId: agendaId,
 					},
 					timeZone: 'local',
-					// eventContent: function (info) {
-					// 	return {
-					// 		html: `<a href="#" class="reserve_button" onclick="getEventId('${info.event.id}')">Réserver</a>`
-					// 	};
-					// },
+					eventContent: function (info) {
+						return {
+							html: `<a href="#" class="reserve_button" >Réserver</a>`
+						};
+					},
 					eventClick: function (info) {
 						info.jsEvent.preventDefault();
 						var eventTitle = info.event.title;
 						var eventStart = info.event.start.toLocaleString();
 						var eventEnd = info.event.end ? info.event.end.toLocaleString() : 'Non spécifié';
-						var eventDescription = info.event.extendedProps.description || 'Aucune description disponible.';
+						event_description = info.event.extendedProps.description || 'Aucune description disponible.';
 
 						Swal.fire({
 							title: eventTitle,
 							html: `
 								<p><strong>Heure de début :</strong> ${eventStart}</p>
 								<p><strong>Heure de fin :</strong> ${eventEnd}</p>
-								<p><strong>Description :</strong> ${eventDescription}</p>
+								<p><strong>Description :</strong> ${event_description}</p>
 								<button id="update_button" onclick="updateEventDescription('${info.event.id}, ${info.event.extendedProps.description}')" style="color:#000 !important;">S'inscrire</button>
 								<pre id="content" style="white-space: pre-wrap;"></pre>
 							`,
