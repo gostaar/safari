@@ -4763,3 +4763,16 @@ input, select, textarea {
 	.reserve_button:hover {
 		background: linear-gradient(45deg, rgba(255, 255, 255, 1), rgba(24, 191, 239, 0.1)); /* Couleur de fond neutre */ /* Couleur de fond au survol */
     }
+
+	@media screen and (max-width: 900px) {
+		a .reserve_button {
+			/* color: red; */
+			padding: 0;
+			margin: 0;
+			font-size: 0.6rem;
+			color: #188faf; 
+			border-radius: 2px;
+			cursor: pointer;
+			background: linear-gradient(225deg, rgba(24, 191, 239, 0.3), rgba(24, 191, 239, 0.1)); /* Dégradé vertical du bas vers le haut */
+		}
+	}
