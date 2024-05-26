@@ -1,4 +1,5 @@
 let calendar;
+
 document.addEventListener('DOMContentLoaded', function () {
 	var calendarEl = document.getElementById('calendar');
 
@@ -96,8 +97,8 @@ function updateEventDescription(event_Id) {
 			}
 
 			const remainingPlaces = firstNumber - subtractionValue;
-			getAuthCode();
-			gapi.client.calendar.events.get({
+			// getAuthCode();
+			gapi.client.calendar.events.get({  //gapi is not defined
 				calendarId: agendaId,
 				eventId: eventId
 			}).then(function (response) {
@@ -121,4 +122,3 @@ function updateEventDescription(event_Id) {
 		}
 	});
 }
-

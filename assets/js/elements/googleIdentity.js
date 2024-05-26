@@ -7,6 +7,7 @@ function initClient() {
     });
 }
 
+
 function getAuthCode() {
     if (!client) {
         console.error('Client is not initialized');
@@ -14,3 +15,18 @@ function getAuthCode() {
     }
     client.requestCode();
 }
+
+function gisLoaded() {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: '', // defined later
+    });
+    gisInited = true;
+}
+    // Swal.fire({
+    //     title: 'Succès',
+    //     html: `L'inscription a été prise en compte.`,
+    //     icon: 'success',
+    //     confirmButtonText: 'OK',
+    // });

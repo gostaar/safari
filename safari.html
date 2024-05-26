@@ -11,24 +11,295 @@
 			<link rel="stylesheet" href="assets/css/noscript.css" />
 		</noscript>
 		<script src="https://accounts.google.com/gsi/client" async defer></script>
+		<!-- <script src="https://apis.google.com/js/api.js" async defer></script> -->
+		<script src="https://apis.google.com/js/api.js?onload=loadGapi" async defer></script>
 		<script>
 			CLIENT_ID = "317641776474-5vjf1sapl5rpf39bq7dn39665co8ucvt.apps.googleusercontent.com";
 			SCOPES = "https://www.googleapis.com/auth/calendar";
-			API_KEY = "AIzaSyCtrR9vgCObA2x3iCMeZbD2RGra3nyFPfU";
+			API_KEY = "AIzaSyCZ2xUuTiArEk2TnxnB_tZpxyt0gK5KMUM";
 			DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest";
 			agendaId = "37fabe836153a47e0be51057b05bbeed550e066cb060b59d93bcfdf164c8690f@group.calendar.google.com";
-			redirect_uri = "http://localhost:5500/safari.html";
+			redirectUri = "http://127.0.0.1:5500/safari.html";
+
+			let client;
+			let tokenClient;
+			let gisInited = false;
+			let gapiInited = false;
 		</script>
 		<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
 		<script src="./packages/core/index.global.js"></script>
 		<script src="./packages/daygrid/index.global.js"></script>
 		<script src="./packages/google-calendar/index.global.js"></script>
 		<script src="./packages/bootstrap5/index.global.js"></script>
-		<script src="assets/js/elements/googleIdentity.js" onload="initClient()"></script>
+
+		<!-- <script src="assets/js/elements/googleIdentity.js"></script> -->
+		<SCRIPT>
+			function initClient() {
+				client = google.accounts.oauth2.initCodeClient({
+					client_id: CLIENT_ID,
+					scope: SCOPES,
+					ux_mode: 'redirect',
+					redirect_uri: redirectUri
+				});
+
+				checkAuth();
+			}
+
+			function getAuthCode() {
+				initClient()
+				if (!client) {
+					console.error('Client is not initialized');
+					return;
+				}
+				client.requestCode();
+			}
+
+			function gisLoaded() {
+				tokenClient = google.accounts.oauth2.initTokenClient({
+					client_id: CLIENT_ID,
+					scope: SCOPES,
+					callback: 'handleAuthResult', // defined later
+				});
+				gisInited = true;
+
+				checkAuth().catch(error => console.error('Erreur lors de l\'authentification :', error));
+
+			}
+
+			function initGapi() {
+				gapi.client.init({
+					apiKey: API_KEY,
+					discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest']
+				}).then(function () {
+					console.log('Bibliothèque Google API chargée avec succès');
+					gapiInited = true;
+				}, function (error) {
+					console.error('Erreur lors de l\'initialisation de la bibliothèque Google API :', error);
+				});
+			}
+
+			function loadGapi() {
+				gapi.load('client', () => {
+					gapi.client.init({
+						apiKey: API_KEY,
+						discoveryDocs: [DISCOVERY_DOC]
+					}).then(() => {
+						console.log('Bibliothèque Google API client chargée.');
+						// handleRedirect();
+					}).catch((error) => {
+						console.error('Erreur durant le chargement de la bibliothèque Google API client:', error);
+					});
+				});
+				gapiInited = true
+			}
+
+			function checkAuth() {
+				console.log("gapiInited ", gapiInited, " gisInited ", gisInited)
+				return new Promise((resolve, reject) => {
+					if (gapiInited && gisInited) {
+						tokenClient.callback = (response) => {
+							if (response.error) {
+								reject(response);
+							} else {
+								resolve(response);
+							}
+						};
+
+						if (gapi.client.getToken() === null) {
+							tokenClient.requestAccessToken({ prompt: 'consent' });
+						} else {
+							resolve(gapi.client.getToken());
+						}
+					} else {
+						reject('GAPI or GIS not initialized');
+					}
+				});
+			}
+
+			function handleAuthResult(authResult) {
+				if (authResult && authResult.access_token) {
+					gapi.client.setToken({ access_token: authResult.access_token });
+					document.getElementById('GoogleStatus').innerText = "Connecté à Google";
+					// Continue with the event update
+					updateEvent();
+				} else {
+					document.getElementById('GoogleStatus').innerText = "Non connecté à Google";
+					console.error('Error during authorization:', authResult.error);
+				}
+			}
+
+			function handleRedirect() {
+				const urlParams = new URLSearchParams(window.location.search);
+				const code = urlParams.get('code');
+				if (code) {
+					tokenClient.callback = handleAuthResult;
+					tokenClient.requestAccessToken({ code });
+				}
+			}
+		</script>
 	</head>
 
-	<body class="is-preload" style="background-image:url('./images/bg.jpg');">
-		<script src="assets/js/elements/calendar.js"></script>
+	<body class="is-preload" style="background-image:url('./images/bg.jpg');" onload=" loadGapi(); gisLoaded();">
+		<!-- <script src="assets/js/elements/calendar.js"></script> -->
+		<script>
+			let event
+			let eventId
+			let event_Id
+
+
+			function updateEvent(event_Id) {
+				event = event_Id.split(',');
+				eventId = event[0];
+				const description = event[1];
+				const match = eventDescription.match(/\d+/);
+				const firstNumber = match ? parseInt(match[0]) : 0;
+				const subtractionValue = parseFloat(document.getElementById('subtractionValue').value);
+				const remainingPlaces = firstNumber - subtractionValue;
+
+				gapi.client.calendar.events.get({
+					calendarId: agendaId,
+					eventId: eventId
+				}).then(function (response) {
+					const eventToUpdate = response.result;
+					eventToUpdate.description = `${remainingPlaces} places restantes`;
+
+					gapi.client.calendar.events.update({
+						calendarId: agendaId,
+						eventId: eventId,
+						resource: eventToUpdate
+					}).then(function (response) {
+						console.log('Evénement mis à jour avec succès :', response);
+					}, function (error) {
+						console.error('Erreur lors de la mise à jour de l\'événement :', error);
+					});
+				}, function (error) {
+					console.error('Erreur lors de la récupération de l\'événement :', error);
+				});
+			}
+
+			let calendar;
+			function updateEventDescription(event_Id) {
+				event = event_Id.split(',');
+				eventId = event[0];
+
+				const match = description.match(/\d+/);
+				const firstNumber = match ? parseInt(match[0]) : 0;
+
+				const maxOptions = 20;
+				let options = '';
+				for (let i = 0; i < maxOptions; i++) {
+					options += `<option value="${i + 1}">${i + 1}</option>`;
+				}
+
+				Swal.fire({
+					title: 'Inscription',
+					html: `
+						<div>
+							<label for="Name">Nom :</label>
+							<input type="text" id="Name" class="swal2-input" required>
+							<label for="email">Email :</label>
+							<input type="email" id="mail" class="swal2-input" required>
+							<label for="phone">Téléphone :</label>
+							<input type="number" id="phone" class="swal2-input" required>
+							<label for="subtractionValue">Nombre de participants :</label>
+							<select id="subtractionValue" class="swal2-select" required>
+								${options}								
+							</select>
+						</div>
+					`,
+					showCancelButton: true,
+					confirmButtonText: 'Confirmer',
+					cancelButtonText: 'Annuler',
+					customClass: {
+						popup: 'custom-popup',
+						confirmButton: 'custom-confirm-button',
+						cancelButton: 'custom-cancel-button'
+					},
+					preConfirm: () => {
+						const name = document.getElementById('Name').value;
+						const email = document.getElementById('mail').value;
+						const phone = document.getElementById('phone').value;
+						const subtractionValue = parseFloat(document.getElementById('subtractionValue').value);
+
+						if (!name || !email || !phone || isNaN(subtractionValue)) {
+							Swal.showValidationMessage('Veuillez remplir tous les champs correctement.');
+							return false;
+						}
+
+						const remainingPlaces = firstNumber - subtractionValue;
+
+						return checkAuth().then(() => {
+							return remainingPlaces;
+						}).catch(error => {
+							console.error('Erreur lors de l\'authentification :', error);
+							Swal.showValidationMessage('Erreur lors de l\'authentification. Veuillez réessayer.');
+						});
+					}
+				}).then((result) => {
+					if (result.isConfirmed) {
+						updateEvent(event_Id);
+						Swal.fire({
+							title: 'Succès',
+							html: `L'inscription a été prise en compte.<br />Nombre de places restantes : ${result.value}`,
+							icon: 'success',
+							confirmButtonText: 'OK',
+						});
+					}
+				});
+			}
+
+			document.addEventListener('DOMContentLoaded', function () {
+				var calendarEl = document.getElementById('calendar');
+
+				calendar = new FullCalendar.Calendar(calendarEl, {
+					initialDate: new Date().toISOString(),
+					validRange: {
+						start: new Date().toISOString(),
+						end: '2024-10-01'
+					},
+					editable: true,
+					selectable: true,
+					buttonText: {
+						today: 'Aujourd\'hui',
+						month: 'Mois',
+						list: 'Liste'
+					},
+					locale: 'fr',
+					firstDay: 1,
+					googleCalendarApiKey: API_KEY,
+					events: {
+						googleCalendarId: agendaId,
+					},
+					timeZone: 'local',
+					// eventContent: function (info) {
+					// 	return {
+					// 		html: `<a href="#" class="reserve_button" onclick="getEventId('${info.event.id}')">Réserver</a>`
+					// 	};
+					// },
+					eventClick: function (info) {
+						info.jsEvent.preventDefault();
+						var eventTitle = info.event.title;
+						var eventStart = info.event.start.toLocaleString();
+						var eventEnd = info.event.end ? info.event.end.toLocaleString() : 'Non spécifié';
+						var eventDescription = info.event.extendedProps.description || 'Aucune description disponible.';
+
+						Swal.fire({
+							title: eventTitle,
+							html: `
+								<p><strong>Heure de début :</strong> ${eventStart}</p>
+								<p><strong>Heure de fin :</strong> ${eventEnd}</p>
+								<p><strong>Description :</strong> ${eventDescription}</p>
+								<button id="update_button" onclick="updateEventDescription('${info.event.id}, ${info.event.extendedProps.description}')" style="color:#000 !important;">S'inscrire</button>
+								<pre id="content" style="white-space: pre-wrap;"></pre>
+							`,
+							showCloseButton: false
+						});
+					},
+				});
+
+				calendar.render();
+			});
+		</script>
 		<div id="wrapper">
 			<header id="header">
 				<a href="index.html" class="logo">Réservations</a>
