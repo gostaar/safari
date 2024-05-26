@@ -26,6 +26,7 @@ footer, header, hgroup, menu, nav, section {
 body {
 	line-height: 1;
 	background-image:url('../../images/bg.jpg');
+	background-size: cover;
 }
 
 ol, ul {
@@ -4743,4 +4744,22 @@ input, select, textarea {
 	.custom-popup select {
 		height: max-content !important;
 	}
-	
+
+	.fc-daygrid-dot-event {
+		justify-content: center !important;
+	}
+
+	.reserve_button {
+        margin-top: 5px;
+        padding: 10px 10px; /* Réduit le padding */
+        color: #188faf; /* Couleur du texte noir */
+        border-radius: 20px;
+        cursor: pointer;
+		font-weight: bold;
+		font-size: large;
+        background: linear-gradient(225deg, rgba(24, 191, 239, 0.3), rgba(24, 191, 239, 0.1)); /* Dégradé vertical du bas vers le haut */
+    }
+
+	.reserve_button:hover {
+		background: linear-gradient(45deg, rgba(255, 255, 255, 1), rgba(24, 191, 239, 0.1)); /* Couleur de fond neutre */ /* Couleur de fond au survol */
+    }
